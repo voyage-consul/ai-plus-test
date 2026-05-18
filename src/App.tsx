@@ -223,6 +223,24 @@ export default function App() {
   // Custom edit overrides
   const [editValues, setEditValues] = useState<Record<string, string>>({});
 
+  const periodDropdownRef = useRef<HTMLDivElement>(null);
+  const channelDropdownRef = useRef<HTMLDivElement>(null);
+  const [isPeriodOpen, setIsPeriodOpen] = useState(false);
+  const [isChannelOpen, setIsChannelOpen] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (periodDropdownRef.current && !periodDropdownRef.current.contains(event.target as Node)) {
+        setIsPeriodOpen(false);
+      }
+      if (channelDropdownRef.current && !channelDropdownRef.current.contains(event.target as Node)) {
+        setIsChannelOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -575,74 +593,84 @@ export default function App() {
             </div>
             
             {/* Period Multi-select */}
-            <div className="relative group">
-              <button className="btn-secondary flex items-center gap-2">
+            <div className="relative" ref={periodDropdownRef}>
+              <button 
+                className={`btn-secondary flex items-center gap-2 ${isPeriodOpen ? 'active' : ''}`}
+                onClick={() => setIsPeriodOpen(!isPeriodOpen)}
+              >
                 <Calendar size={14}/>
                 {selectedPeriods.length===0 || selectedPeriods.includes('all') ? '全期間' : `${selectedPeriods.length}期間選択中`}
-                <ChevronDown size={14}/>
+                <ChevronDown size={14} className={`transition-transform ${isPeriodOpen ? 'rotate-180' : ''}`} />
               </button>
-              <div className="absolute top-full left-0 mt-1 bg-white border border-[#f2f2f2] rounded-md shadow-lg hidden group-hover:block w-[220px] max-h-[300px] overflow-y-auto z-50">
-                <label className="flex items-center px-4 py-2 hover:bg-[#f9f9f9] cursor-pointer">
-                  <input type="checkbox" className="mr-2" 
-                    checked={selectedPeriods.length===0 || selectedPeriods.includes('all')} 
-                    onChange={(e)=>{
-                      if(e.target.checked) setSelectedPeriods(['all']);
-                      else setSelectedPeriods([]);
-                    }} /> 全期間
-                </label>
-                {availablePeriods.map(p => (
-                  <label key={p} className="flex items-center px-4 py-2 hover:bg-[#f9f9f9] cursor-pointer">
-                    <input type="checkbox" className="mr-2"
-                      checked={selectedPeriods.includes(p)}
+              {isPeriodOpen && (
+                <div className="absolute top-full left-0 mt-1 bg-white border border-[#f2f2f2] rounded-md shadow-lg w-[220px] max-h-[300px] overflow-y-auto z-50">
+                  <label className="flex items-center px-4 py-2 hover:bg-[#f9f9f9] cursor-pointer border-b border-[#f2f2f2] font-semibold sticky top-0 bg-white">
+                    <input type="checkbox" className="mr-2" 
+                      checked={selectedPeriods.length===0 || selectedPeriods.includes('all')} 
                       onChange={(e)=>{
-                        if(e.target.checked) {
-                          setSelectedPeriods(prev => prev.includes('all') ? [p] : [...prev, p]);
-                        } else {
-                          setSelectedPeriods(prev => prev.filter(x => x !== p));
-                        }
-                      }}
-                    /> {p}
+                        if(e.target.checked) setSelectedPeriods(['all']);
+                        else setSelectedPeriods([]);
+                      }} /> 全期間
                   </label>
-                ))}
-              </div>
+                  {availablePeriods.map(p => (
+                    <label key={p} className="flex items-center px-4 py-2 hover:bg-[#f9f9f9] cursor-pointer">
+                      <input type="checkbox" className="mr-2"
+                        checked={selectedPeriods.includes(p)}
+                        onChange={(e)=>{
+                          if(e.target.checked) {
+                            setSelectedPeriods(prev => prev.includes('all') ? [p] : [...prev, p]);
+                          } else {
+                            setSelectedPeriods(prev => prev.filter(x => x !== p));
+                          }
+                        }}
+                      /> {p}
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Channel Multi-select */}
-            <div className="relative group">
-              <button className="btn-secondary flex items-center gap-2">
+            <div className="relative" ref={channelDropdownRef}>
+              <button 
+                className={`btn-secondary flex items-center gap-2 ${isChannelOpen ? 'active' : ''}`}
+                onClick={() => setIsChannelOpen(!isChannelOpen)}
+              >
                 <Filter size={14}/>
                 {selectedChannels.length===0 || selectedChannels.includes('all') ? '全流入経路' : `${selectedChannels.length}経路選択中`}
-                <ChevronDown size={14}/>
+                <ChevronDown size={14} className={`transition-transform ${isChannelOpen ? 'rotate-180' : ''}`} />
               </button>
-              <div className="absolute top-full left-0 mt-1 bg-white border border-[#f2f2f2] rounded-md shadow-lg hidden group-hover:block w-[260px] max-h-[400px] overflow-y-auto z-50">
-                <label className="flex items-center px-4 py-2 hover:bg-[#f9f9f9] cursor-pointer font-semibold border-b border-[#f2f2f2]">
-                  <input type="checkbox" className="mr-2" 
-                    checked={selectedChannels.length===0 || selectedChannels.includes('all')} 
-                    onChange={(e)=>{
-                      if(e.target.checked) setSelectedChannels(['all']);
-                      else setSelectedChannels([]);
-                    }} /> すべての流入経路
-                </label>
-                {['オーガニック', '広告流入', 'その他'].map(cat => (
-                  <div key={cat}>
-                    <div className="px-3 py-1 bg-[#f9f9f9] text-[11px] font-bold text-[#666] uppercase mt-1">{cat}</div>
-                    {availableChannels.filter(c => getChannelCategory(c) === cat).map(c => (
-                      <label key={c} className="flex items-center px-4 py-1.5 hover:bg-[#f2f2f2] cursor-pointer text-[13px]">
-                        <input type="checkbox" className="mr-2"
-                          checked={selectedChannels.includes(c)}
-                          onChange={(e)=>{
-                            if(e.target.checked) {
-                              setSelectedChannels(prev => prev.includes('all') ? [c] : [...prev, c]);
-                            } else {
-                              setSelectedChannels(prev => prev.filter(x => x !== c));
-                            }
-                          }}
-                        /> {c || '(空欄)'}
-                      </label>
-                    ))}
-                  </div>
-                ))}
-              </div>
+              {isChannelOpen && (
+                <div className="absolute top-full left-0 mt-1 bg-white border border-[#f2f2f2] rounded-md shadow-lg w-[260px] max-h-[400px] overflow-y-auto z-50">
+                  <label className="flex items-center px-4 py-2 hover:bg-[#f9f9f9] cursor-pointer font-semibold border-b border-[#f2f2f2] sticky top-0 bg-white z-10">
+                    <input type="checkbox" className="mr-2" 
+                      checked={selectedChannels.length===0 || selectedChannels.includes('all')} 
+                      onChange={(e)=>{
+                        if(e.target.checked) setSelectedChannels(['all']);
+                        else setSelectedChannels([]);
+                      }} /> すべての流入経路
+                  </label>
+                  {['オーガニック', '広告流入', 'その他'].map(cat => (
+                    <div key={cat}>
+                      <div className="px-3 py-1 bg-[#f9f9f9] text-[11px] font-bold text-[#666] uppercase mt-1">{cat}</div>
+                      {availableChannels.filter(c => getChannelCategory(c) === cat).map(c => (
+                        <label key={c} className="flex items-center px-4 py-1.5 hover:bg-[#f2f2f2] cursor-pointer text-[13px]">
+                          <input type="checkbox" className="mr-2"
+                            checked={selectedChannels.includes(c)}
+                            onChange={(e)=>{
+                              if(e.target.checked) {
+                                setSelectedChannels(prev => prev.includes('all') ? [c] : [...prev, c]);
+                              } else {
+                                setSelectedChannels(prev => prev.filter(x => x !== c));
+                              }
+                            }}
+                          /> {c || '(空欄)'}
+                        </label>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           
