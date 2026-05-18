@@ -1,0 +1,8 @@
+{
+  "name": "LINE Marketing Dashboard",
+  "description": "Lステップのデータ分析用ダッシュボード",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
